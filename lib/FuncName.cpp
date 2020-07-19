@@ -7,6 +7,8 @@
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/IR/IRBuilder.h"
 
+#include "demangle.h"
+
 using namespace llvm;
 
 //-----------------------------------------------------------------------------
@@ -39,7 +41,8 @@ bool FuncName::runOnModule(llvm::Module &M) {
         if (F.isDeclaration())
             continue;
         IRBuilder<> Builder(&*F.getEntryBlock().getFirstInsertionPt());
-        Constant *FuncName = Builder.CreateGlobalStringPtr(F.getName());
+        std::string demangle_name_std = rust_demangle(F.getName().str());
+        Constant *FuncName = Builder.CreateGlobalStringPtr(demangle_name_std.c_str());
         llvm::Value *FormatStrPtr =
                 Builder.CreatePointerCast(PrintfFormatStrVar, PrintfArgTy, "formatStr");
 

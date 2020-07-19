@@ -2,8 +2,8 @@
 // Created by Haobo on 2020/7/17.
 //
 
-#ifndef RUST_DCC_FUNCNAME_H
-#define RUST_DCC_FUNCNAME_H
+#ifndef RUST_LLVM_PASS_FUNCNAME_H
+#define RUST_LLVM_PASS_FUNCNAME_H
 
 #include "llvm/Pass.h"
 #include "llvm/IR/Function.h"
@@ -17,10 +17,11 @@
 //------------------------------------------------------------------------------
 struct FuncName : public llvm::ModulePass {
     static char ID;
+
     FuncName() : ModulePass(ID) {}
+
     bool runOnModule(llvm::Module &M) override;
 };
 
 
-
-#endif //RUST_DCC_FUNCNAME_H
+#endif //RUST_LLVM_PASS_FUNCNAME_H
