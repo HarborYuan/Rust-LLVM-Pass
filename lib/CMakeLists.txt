@@ -4,10 +4,11 @@ set(LLVM_PLUGINS
         )
 
 set(FuncName_SOURCES
-        FuncName.cpp)
+        FuncName.cpp
+        )
 
 
-foreach( plugin ${LLVM_PLUGINS} )
+foreach (plugin ${LLVM_PLUGINS})
     add_library(
             ${plugin}
             SHARED
@@ -20,6 +21,7 @@ foreach( plugin ${LLVM_PLUGINS} )
     )
     target_link_libraries(
             ${plugin}
+            demangle
     )
-endforeach()
+endforeach ()
 
