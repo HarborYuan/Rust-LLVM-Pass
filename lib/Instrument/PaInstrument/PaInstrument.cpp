@@ -111,6 +111,32 @@ void PAInstrumentor::InitHooks(Module &M) {
     } else {
         errs() << " Error when creating : " << "PrintIntParam" << "\n";
     }
+
+    // PrintParamNum
+    // void PrintParamNum(int i);
+    this->PrintParamNum = M.getFunction("PrintParamNum");
+    if (!this->PrintParamNum) {
+        ArgTypes.clear();
+        ArgTypes.push_back(this->IntType);
+        FunctionType *PrintParamNum_FuncTy = FunctionType::get(this->VoidType, ArgTypes, false);
+        this->PrintParamNum = Function::Create(PrintParamNum_FuncTy, GlobalValue::ExternalLinkage, "PrintParamNum", M);
+        this->PrintParamNum->setCallingConv(CallingConv::C);
+    } else {
+        errs() << " Error when creating : " << "PrintParamNum" << "\n";
+    }
+
+    // PrintUnimplParam
+    // void PrintUnimplParam();
+    this->PrintUnimplParam = M.getFunction("PrintUnimplParam");
+    if (!this->PrintUnimplParam) {
+        ArgTypes.clear();
+        FunctionType *PrintUnimplParam_FuncTy = FunctionType::get(this->VoidType, ArgTypes, false);
+        this->PrintUnimplParam = Function::Create(PrintUnimplParam_FuncTy, GlobalValue::ExternalLinkage,
+                                                  "PrintUnimplParam", M);
+        this->PrintUnimplParam->setCallingConv(CallingConv::C);
+    } else {
+        errs() << " Error when creating : " << "PrintUnimplParam" << "\n";
+    }
 }
 
 
@@ -130,7 +156,6 @@ bool PAInstrumentor::runOnModule(llvm::Module &M) {
     for (auto itMapBegin = mapGenericFunctions.begin(); itMapBegin != mapGenericFunctions.end(); itMapBegin++) {
         for (auto pFF = itMapBegin->second.begin(); pFF != itMapBegin->second.end(); pFF++) {
             Function *F = *pFF;
-            errs() << F->getName() << "\n";
             IRBuilder<> Builder(&*F->getEntryBlock().getFirstInsertionPt());
             // instrument PrintFuncName
             {
@@ -141,13 +166,16 @@ bool PAInstrumentor::runOnModule(llvm::Module &M) {
 
             for (auto arg = F->arg_begin(); arg != F->arg_end(); arg++) {
                 auto type = arg->getType();
+                Builder.CreateCall(
+                        PrintParamNum, ConstantInt::get(this->IntType, arg->getArgNo()));
                 if (type->isIntegerTy()) {
                     Builder.CreateCall(
                             PrintIntParam, {dyn_cast<Value>(arg)});
+                } else {
+                    Builder.CreateCall(
+                            PrintUnimplParam, None);
                 }
-
             }
-
             Instrumented = true;
         }
     }

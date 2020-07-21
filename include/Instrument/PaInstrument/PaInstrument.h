@@ -37,9 +37,8 @@ private:
     // Hook Funcs
     Function *PrintFuncName;
     Function *PrintIntParam;
-    Function *PrintVoidParam;
-    Function *PrintCharParam;
-
+    Function *PrintParamNum;
+    Function *PrintUnimplParam;
 };
 
 
