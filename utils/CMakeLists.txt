@@ -7,7 +7,6 @@ add_library(
 target_include_directories(
         demangle
         PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/../include"
         ${RUSTC_DEMANGLE_INCLUDE_DIR}
 )
 

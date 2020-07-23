@@ -23,12 +23,13 @@ std::string rust_demangle(std::string input) {
         if (code2) {
             return output2;
         } else {
-            return std::string("rust_demangle() :: Not a Rust Symbol => " + input);
+            return input;
         }
     }
 }
 
-std::tuple<std::string, bool> rust_demangle_legacy(std::string input) {
+// result is_legacy suffix
+std::tuple<std::string, bool, std::string> rust_demangle_legacy(std::string input) {
     if (input.compare(0, 3, "_ZN") == 0) {
         input = input.substr(3);
     } else if (input.compare(0, 4, "__ZN") == 0) {
@@ -37,7 +38,7 @@ std::tuple<std::string, bool> rust_demangle_legacy(std::string input) {
         input = input.substr(2);
     } else {
         // Not a legacy mangled string
-        return {std::string(""), false};
+        return {std::string(""), false, std::string("")};
     }
 
 
@@ -46,7 +47,7 @@ std::tuple<std::string, bool> rust_demangle_legacy(std::string input) {
                             [](unsigned char current) { return current & static_cast<unsigned char>(0x80); });
     if (pos != input.cend()) {
         // Not a legacy mangled string
-        return {std::string(""), false};
+        return {std::string(""), false, std::string("")};
     }
 
     std::vector<std::string> slices;
@@ -54,14 +55,14 @@ std::tuple<std::string, bool> rust_demangle_legacy(std::string input) {
     while (iter != input.cend() && *iter != 'E') {
         if (!isdigit(*iter)) {
             // No num prefix
-            return {std::string(""), false};
+            return {std::string(""), false, std::string("")};
         }
         unsigned int len = 0;
         while (isdigit(*iter)) {
             len = len * 10 + (*iter - '0');
             iter++;
             if (iter == input.cend()) {
-                return {std::string(""), false};
+                return {std::string(""), false, std::string("")};
             }
         }
         std::string tmp;
@@ -69,16 +70,23 @@ std::tuple<std::string, bool> rust_demangle_legacy(std::string input) {
             if (iter != input.cend()) {
                 tmp.push_back(*iter++);
             } else {
-                return {std::string(""), false};
+                return {std::string(""), false, std::string("")};
             }
         }
         slices.push_back(tmp);
     }
+    if (iter == input.cend()) {
+        return {std::string(""), false, std::string("")};
+    }
+
     std::string result;
     for (auto iter = slices.cbegin(); iter != slices.cend(); iter++) {
-        if (iter + 1 == slices.cend()){
-            // Hash
-            break;
+        if (iter + 1 == slices.cend() && (*iter)[0] == 'h') {
+            std::string sub_tmp = iter->substr(1);
+            if (sub_tmp.find_first_not_of("0123456789abcdef") == std::string::npos) {
+                // Hash
+                break;
+            }
         }
         if (iter != slices.cbegin()) {
             result += "::";
@@ -152,7 +160,7 @@ std::tuple<std::string, bool> rust_demangle_legacy(std::string input) {
         }
         result += tmp;
     }
-    return {result, true};
+    return {result, true, input.substr(iter + 1 - input.cbegin())};
 }
 
 std::string rust_demangle_tmp(std::string input) {
@@ -161,16 +169,22 @@ std::string rust_demangle_tmp(std::string input) {
     std::size_t pos = input.find(llvm_symbol);
     if (pos != std::string::npos) {
         std::string candidate = input.substr(pos + llvm_symbol.length());
-        if (candidate.find_first_not_of("0123456789ABCDEF@") != std::string::npos) {
+        if (candidate.find_first_not_of("0123456789ABCDEF@") == std::string::npos) {
             input = input.substr(0, pos);
         }
     }
 
     std::string res;
     bool is_legacy;
-    std::tie(res, is_legacy) = rust_demangle_legacy(input);
+    std::string suffix;
+    std::tie(res, is_legacy, suffix) = rust_demangle_legacy(input);
     if (is_legacy) {
-        return res;
+        if (!suffix.empty() && suffix.at(0) == '.') {
+            return res + suffix;
+        } else {
+            return res;
+        }
+
     } else {
         return input;
     }
