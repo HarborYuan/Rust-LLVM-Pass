@@ -35,10 +35,13 @@ private:
 
 
     // Hook Funcs
+    Function *PrintBackTrace;
     Function *PrintFuncName;
     Function *PrintIntParam;
+    Function *PrintLongParam;
     Function *PrintParamNum;
     Function *PrintUnimplParam;
+    Function *PrintType;
 };
 
 

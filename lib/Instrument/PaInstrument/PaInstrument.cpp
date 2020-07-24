@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include <set>
+#include <iostream>
 
 #include "llvm/Transforms/Utils/ModuleUtils.h"
 #include "llvm/Passes/PassBuilder.h"
@@ -86,6 +87,20 @@ void PAInstrumentor::InitTypes(Module &M) {
 void PAInstrumentor::InitHooks(Module &M) {
     std::vector<Type *> ArgTypes;
 
+    // PrintBackTrace
+    // void PrintBackTrace();
+    this->PrintBackTrace = M.getFunction("PrintBackTrace");
+    if (!this->PrintBackTrace) {
+        ArgTypes.clear();
+        FunctionType *PrintBackTrace_FuncTy = FunctionType::get(this->VoidType, ArgTypes, false);
+        this->PrintBackTrace = Function::Create(PrintBackTrace_FuncTy, GlobalValue::ExternalLinkage, "PrintBackTrace",
+                                                M);
+        this->PrintBackTrace->setCallingConv(CallingConv::C);
+    } else {
+        errs() << " Error when creating : " << "PrintBackTrace" << "\n";
+    }
+
+
     // PrintFuncName
     // void PrintFuncName(char *i);
     this->PrintFuncName = M.getFunction("PrintFuncName");
@@ -97,6 +112,20 @@ void PAInstrumentor::InitHooks(Module &M) {
         this->PrintFuncName->setCallingConv(CallingConv::C);
     } else {
         errs() << " Error when creating : " << "PrintFuncName" << "\n";
+    }
+
+
+    // PrintType
+    // void PrintType(char *i);
+    this->PrintType = M.getFunction("PrintType");
+    if (!this->PrintType) {
+        ArgTypes.clear();
+        ArgTypes.push_back(this->CharPointerType);
+        FunctionType *PrintType_FuncTy = FunctionType::get(this->VoidType, ArgTypes, false);
+        this->PrintType = Function::Create(PrintType_FuncTy, GlobalValue::ExternalLinkage, "PrintType", M);
+        this->PrintType->setCallingConv(CallingConv::C);
+    } else {
+        errs() << " Error when creating : " << "PrintType" << "\n";
     }
 
     // PrintIntParam
@@ -111,6 +140,20 @@ void PAInstrumentor::InitHooks(Module &M) {
     } else {
         errs() << " Error when creating : " << "PrintIntParam" << "\n";
     }
+
+    // PrintLongParam
+    // void PrintLongParam(long long i)
+    this->PrintLongParam = M.getFunction("PrintLongParam");
+    if (!this->PrintLongParam) {
+        ArgTypes.clear();
+        ArgTypes.push_back(this->LongType);
+        FunctionType *PrintLongParam_FuncTy = FunctionType::get(this->VoidType, ArgTypes, false);
+        this->PrintLongParam = Function::Create(PrintLongParam_FuncTy, GlobalValue::ExternalLinkage, "PrintLongParam", M);
+        this->PrintLongParam->setCallingConv(CallingConv::C);
+    } else {
+        errs() << " Error when creating : " << "PrintLongParam" << "\n";
+    }
+
 
     // PrintParamNum
     // void PrintParamNum(int i);
@@ -163,14 +206,32 @@ bool PAInstrumentor::runOnModule(llvm::Module &M) {
                 Builder.CreateCall(
                         PrintFuncName, {FuncName});
             }
-
+            // instrument PrintBackTrace
+            {
+//                Not working well currently
+//                Builder.CreateCall(
+//                        PrintBackTrace, None);
+            }
             for (auto arg = F->arg_begin(); arg != F->arg_end(); arg++) {
                 auto type = arg->getType();
                 Builder.CreateCall(
                         PrintParamNum, ConstantInt::get(this->IntType, arg->getArgNo()));
-                if (type->isIntegerTy()) {
+                // Print type name
+                {
+                    std::string type_name;
+                    raw_string_ostream oss(type_name);
+                    oss << *type;
+                    Constant *TypeName = Builder.CreateGlobalStringPtr(oss.str());
+                    Builder.CreateCall(
+                            PrintType, {TypeName});
+                }
+
+                if (type->isIntegerTy(32)) {
                     Builder.CreateCall(
                             PrintIntParam, {dyn_cast<Value>(arg)});
+                } else if (type->isIntegerTy(64)) {
+                    Builder.CreateCall(
+                            PrintLongParam, {dyn_cast<Value>(arg)});
                 } else {
                     Builder.CreateCall(
                             PrintUnimplParam, None);
