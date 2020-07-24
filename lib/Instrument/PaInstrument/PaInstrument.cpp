@@ -76,12 +76,16 @@ void PAInstrumentor::InitTypes(Module &M) {
     this->VoidType = Type::getVoidTy(M.getContext());
     this->LongType = IntegerType::get(M.getContext(), 64);
     this->IntType = IntegerType::get(M.getContext(), 32);
+    this->ShortType = IntegerType::get(M.getContext(), 16);
     this->CharType = IntegerType::get(M.getContext(), 8);
     this->BoolType = IntegerType::get(M.getContext(), 1);
 
     this->VoidPointerType = PointerType::get(this->CharType, 0);
     this->CharPointerType = PointerType::get(this->CharType, 0);
     this->LongPointerType = PointerType::get(this->LongType, 0);
+
+    this->DoubleType = Type::getDoubleTy(M.getContext());
+    this->FloatType = Type::getFloatTy(M.getContext());
 }
 
 void PAInstrumentor::InitHooks(Module &M) {
@@ -148,12 +152,71 @@ void PAInstrumentor::InitHooks(Module &M) {
         ArgTypes.clear();
         ArgTypes.push_back(this->LongType);
         FunctionType *PrintLongParam_FuncTy = FunctionType::get(this->VoidType, ArgTypes, false);
-        this->PrintLongParam = Function::Create(PrintLongParam_FuncTy, GlobalValue::ExternalLinkage, "PrintLongParam", M);
+        this->PrintLongParam = Function::Create(PrintLongParam_FuncTy, GlobalValue::ExternalLinkage, "PrintLongParam",
+                                                M);
         this->PrintLongParam->setCallingConv(CallingConv::C);
     } else {
         errs() << " Error when creating : " << "PrintLongParam" << "\n";
     }
 
+
+    // PrintShortParam
+    // void PrintShortParam(short i);
+    this->PrintShortParam = M.getFunction("PrintShortParam");
+    if (!this->PrintShortParam) {
+        ArgTypes.clear();
+        ArgTypes.push_back(this->ShortType);
+        FunctionType *PrintShortParam_FuncTy = FunctionType::get(this->VoidType, ArgTypes, false);
+        this->PrintShortParam = Function::Create(PrintShortParam_FuncTy, GlobalValue::ExternalLinkage,
+                                                 "PrintShortParam", M);
+        this->PrintShortParam->setCallingConv(CallingConv::C);
+    } else {
+        errs() << " Error when creating : " << "PrintShortParam" << "\n";
+    }
+
+    // PrintCharParam
+    // void PrintCharParam(char i);
+    this->PrintCharParam = M.getFunction("PrintCharParam");
+    if (!this->PrintCharParam) {
+        ArgTypes.clear();
+        ArgTypes.push_back(this->CharType);
+        FunctionType *PrintCharParam_FuncTy = FunctionType::get(this->VoidType, ArgTypes, false);
+        this->PrintCharParam = Function::Create(PrintCharParam_FuncTy, GlobalValue::ExternalLinkage, "PrintCharParam",
+                                                M);
+        this->PrintCharParam->setCallingConv(CallingConv::C);
+    } else {
+        errs() << " Error when creating : " << "PrintCharParam" << "\n";
+    }
+
+
+    // PrintDoubleParam
+    // void PrintDoubleParam(double i);
+    this->PrintDoubleParam = M.getFunction("PrintDoubleType");
+    if (!this->PrintDoubleParam) {
+        ArgTypes.clear();
+        ArgTypes.push_back(this->DoubleType);
+        FunctionType *PrintDoubleParam_FuncTy = FunctionType::get(this->VoidType, ArgTypes, false);
+        this->PrintDoubleParam = Function::Create(PrintDoubleParam_FuncTy, GlobalValue::ExternalLinkage, "PrintDoubleParam",
+                                                M);
+        this->PrintDoubleParam->setCallingConv(CallingConv::C);
+    } else {
+        errs() << " Error when creating : " << "PrintDoubleParam" << "\n";
+    }
+
+
+    // PrintFloatParam
+    // void PrintFloatParam(double i);
+    this->PrintFloatParam = M.getFunction("PrintFloatParam");
+    if (!this->PrintFloatParam) {
+        ArgTypes.clear();
+        ArgTypes.push_back(this->FloatType);
+        FunctionType *PrintFloatParam_FuncTy = FunctionType::get(this->VoidType, ArgTypes, false);
+        this->PrintFloatParam = Function::Create(PrintFloatParam_FuncTy, GlobalValue::ExternalLinkage, "PrintFloatParam",
+                                                  M);
+        this->PrintFloatParam->setCallingConv(CallingConv::C);
+    } else {
+        errs() << " Error when creating : " << "PrintFloatParam" << "\n";
+    }
 
     // PrintParamNum
     // void PrintParamNum(int i);
@@ -226,13 +289,30 @@ bool PAInstrumentor::runOnModule(llvm::Module &M) {
                             PrintType, {TypeName});
                 }
 
-                if (type->isIntegerTy(32)) {
+                if (type->isIntegerTy()) {
+                    if (type->isIntegerTy(64)) {
+                        Builder.CreateCall(
+                                PrintLongParam, {dyn_cast<Value>(arg)});
+                    } else if (type->isIntegerTy(32)) {
+                        Builder.CreateCall(
+                                PrintIntParam, {dyn_cast<Value>(arg)});
+                    } else if (type->isIntegerTy(16)) {
+                        Builder.CreateCall(
+                                PrintShortParam, {dyn_cast<Value>(arg)});
+                    } else if (type->isIntegerTy(8)) {
+                        Builder.CreateCall(
+                                PrintCharParam, {dyn_cast<Value>(arg)});
+                    } else {
+                        Builder.CreateCall(
+                                PrintUnimplParam, None);
+                    }
+                } else if(type->isDoubleTy()) {
                     Builder.CreateCall(
-                            PrintIntParam, {dyn_cast<Value>(arg)});
-                } else if (type->isIntegerTy(64)) {
+                            PrintDoubleParam, {dyn_cast<Value>(arg)});
+                }  else if (type->isFloatTy()) {
                     Builder.CreateCall(
-                            PrintLongParam, {dyn_cast<Value>(arg)});
-                } else {
+                            PrintFloatParam, {dyn_cast<Value>(arg)});
+                } else{
                     Builder.CreateCall(
                             PrintUnimplParam, None);
                 }

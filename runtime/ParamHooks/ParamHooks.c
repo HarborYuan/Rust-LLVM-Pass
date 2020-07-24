@@ -13,6 +13,25 @@ void PrintLongParam(long long i) {
     printf("%lld\n", i);
 }
 
+// print short parameters (i16)
+void PrintShortParam(short i) {
+    printf("%d\n", i);
+}
+
+// print char parameters (i8)
+void PrintCharParam(char i) {
+    printf("%d\n", i);
+}
+
+// print double parameters
+void PrintDoubleParam(double i) {
+    printf("%f\n", i);
+}
+
+// print float parameters
+void PrintFloatParam(float i) {
+    printf("%f\n", i);
+}
 
 // print function name
 void PrintFuncName(char *i) {

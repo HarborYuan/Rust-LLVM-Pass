@@ -27,18 +27,29 @@ private:
     IntegerType *LongType;
     IntegerType *CharType;
     IntegerType *IntType;
+    IntegerType *ShortType;
     IntegerType *BoolType;
 
     PointerType *LongPointerType;
     PointerType *VoidPointerType;
     PointerType *CharPointerType;
 
+    Type *DoubleType;
+    Type *FloatType;
+
 
     // Hook Funcs
     Function *PrintBackTrace;
     Function *PrintFuncName;
+
     Function *PrintIntParam;
     Function *PrintLongParam;
+    Function *PrintShortParam;
+    Function *PrintCharParam;
+
+    Function *PrintDoubleParam;
+    Function *PrintFloatParam;
+
     Function *PrintParamNum;
     Function *PrintUnimplParam;
     Function *PrintType;
