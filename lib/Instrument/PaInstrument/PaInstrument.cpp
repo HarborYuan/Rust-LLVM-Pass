@@ -80,7 +80,7 @@ void PAInstrumentor::InitTypes(Module &M) {
     this->CharType = IntegerType::get(M.getContext(), 8);
     this->BoolType = IntegerType::get(M.getContext(), 1);
 
-    this->VoidPointerType = PointerType::get(this->CharType, 0);
+    this->VoidPointerType = PointerType::get(this->CharType, 0); // There is no void * in LLVM
     this->CharPointerType = PointerType::get(this->CharType, 0);
     this->LongPointerType = PointerType::get(this->LongType, 0);
 
@@ -196,8 +196,9 @@ void PAInstrumentor::InitHooks(Module &M) {
         ArgTypes.clear();
         ArgTypes.push_back(this->DoubleType);
         FunctionType *PrintDoubleParam_FuncTy = FunctionType::get(this->VoidType, ArgTypes, false);
-        this->PrintDoubleParam = Function::Create(PrintDoubleParam_FuncTy, GlobalValue::ExternalLinkage, "PrintDoubleParam",
-                                                M);
+        this->PrintDoubleParam = Function::Create(PrintDoubleParam_FuncTy, GlobalValue::ExternalLinkage,
+                                                  "PrintDoubleParam",
+                                                  M);
         this->PrintDoubleParam->setCallingConv(CallingConv::C);
     } else {
         errs() << " Error when creating : " << "PrintDoubleParam" << "\n";
@@ -211,12 +212,29 @@ void PAInstrumentor::InitHooks(Module &M) {
         ArgTypes.clear();
         ArgTypes.push_back(this->FloatType);
         FunctionType *PrintFloatParam_FuncTy = FunctionType::get(this->VoidType, ArgTypes, false);
-        this->PrintFloatParam = Function::Create(PrintFloatParam_FuncTy, GlobalValue::ExternalLinkage, "PrintFloatParam",
-                                                  M);
+        this->PrintFloatParam = Function::Create(PrintFloatParam_FuncTy, GlobalValue::ExternalLinkage,
+                                                 "PrintFloatParam",
+                                                 M);
         this->PrintFloatParam->setCallingConv(CallingConv::C);
     } else {
         errs() << " Error when creating : " << "PrintFloatParam" << "\n";
     }
+
+    // PrintPtrParam
+    // void PrintPtrParam(void *i);
+    this->PrintPtrParam = M.getFunction("PrintPtrParam");
+    if (!this->PrintPtrParam) {
+        ArgTypes.clear();
+        ArgTypes.push_back(this->VoidPointerType);
+        FunctionType *PrintPtrParam_FuncTy = FunctionType::get(this->VoidType, ArgTypes, false);
+        this->PrintPtrParam = Function::Create(PrintPtrParam_FuncTy, GlobalValue::ExternalLinkage,
+                                               "PrintPtrParam",
+                                               M);
+        this->PrintPtrParam->setCallingConv(CallingConv::C);
+    } else {
+        errs() << " Error when creating : " << "PrintPtrParam" << "\n";
+    }
+
 
     // PrintParamNum
     // void PrintParamNum(int i);
@@ -271,9 +289,8 @@ bool PAInstrumentor::runOnModule(llvm::Module &M) {
             }
             // instrument PrintBackTrace
             {
-//                Not working well currently
-//                Builder.CreateCall(
-//                        PrintBackTrace, None);
+                Builder.CreateCall(
+                        PrintBackTrace, None);
             }
             for (auto arg = F->arg_begin(); arg != F->arg_end(); arg++) {
                 auto type = arg->getType();
@@ -306,13 +323,25 @@ bool PAInstrumentor::runOnModule(llvm::Module &M) {
                         Builder.CreateCall(
                                 PrintUnimplParam, None);
                     }
-                } else if(type->isDoubleTy()) {
+                } else if (type->isDoubleTy()) {
                     Builder.CreateCall(
                             PrintDoubleParam, {dyn_cast<Value>(arg)});
-                }  else if (type->isFloatTy()) {
+                } else if (type->isFloatTy()) {
                     Builder.CreateCall(
                             PrintFloatParam, {dyn_cast<Value>(arg)});
-                } else{
+                } else if (type->isPointerTy()) {
+                    // TODO
+//                    auto *arg_value = dyn_cast<Value>(arg);
+//                    arg_value->mutateType(this->VoidPointerType);
+//                    Builder.CreateCall(
+//                            PrintPtrParam, {arg_value});
+                    Builder.CreateCall(
+                            PrintUnimplParam, None);
+                } else if (type->isAggregateType()) {
+                    // TODO
+                    Builder.CreateCall(
+                            PrintUnimplParam, None);
+                } else {
                     Builder.CreateCall(
                             PrintUnimplParam, None);
                 }

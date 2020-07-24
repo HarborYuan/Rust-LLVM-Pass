@@ -48,6 +48,10 @@ void PrintUnimplParam() {
     printf("Unimplemented!\n");
 }
 
+void PrintPtrParam(char *i) {
+    printf("%04llx\n",(unsigned long long)i);
+}
+
 void PrintBackTrace() {
     void *array[512];
     size_t size;

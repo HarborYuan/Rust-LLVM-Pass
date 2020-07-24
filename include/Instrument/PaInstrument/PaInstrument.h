@@ -49,6 +49,7 @@ private:
 
     Function *PrintDoubleParam;
     Function *PrintFloatParam;
+    Function *PrintPtrParam;
 
     Function *PrintParamNum;
     Function *PrintUnimplParam;
